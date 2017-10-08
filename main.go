@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./flow"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -17,56 +18,58 @@ type Env struct {
 	Bot Bot `json:"bot"`
 }
 
-type Response struct {
-}
-
-type Events struct {
-}
-
-func exit(err error) {
-	panic(fmt.Sprintf("%#v", err))
-}
-
 func loadEnv() (env *Env, err error) {
-	env = new(Env)
-	body, err := ioutil.ReadFile("./.env.json")
+	var body []byte
 
-	if err != nil {
-		return
-	}
+	err = flow.Go(
+		func() (err error) {
+			body, err = ioutil.ReadFile("./.env.json")
+			return
+		},
 
-	err = json.Unmarshal([]byte(body), &env)
+		func() (err error) {
+			return json.Unmarshal(body, &env)
+		},
+	)
 
 	return
 }
 
 func main() {
-	env, err := loadEnv()
+	var env *Env
+	var response *http.Response
+	var contents []byte
 
-	if err != nil {
-		exit(err)
-	}
+	err := flow.Go(
+		func() (err error) {
+			env, err = loadEnv()
+			return
+		},
 
-	fmt.Println("NICK ", env.Bot.NICK)
+		func() (err error) {
+			endpoint := fmt.Sprintf(
+				"https://botapi.icq.net/fetchEvents?aimsid=%s&timeout=%d",
+				env.Bot.AIMSID,
+				60000,
+			)
 
-	endpoint := fmt.Sprintf(
-		"https://botapi.icq.net/im/fetchEvents?aimsid=%s&seqNum=951681&timeout=%d",
-		env.Bot.AIMSID,
-		60000,
+			fmt.Println("NICK ", env.Bot.NICK)
+			fmt.Println(string(endpoint))
+
+			response, err = http.Get(endpoint)
+			return
+		},
+
+		func() (err error) {
+			contents, err = ioutil.ReadAll(response.Body)
+			defer response.Body.Close()
+			return
+		},
 	)
-	fmt.Print(string(endpoint))
-	response, err := http.Get(endpoint)
 
 	if err != nil {
-		exit(err)
+		panic(fmt.Sprintf("%#v", err))
 	}
 
-	defer response.Body.Close()
-	contents, err := ioutil.ReadAll(response.Body)
-
-	if err != nil {
-		exit(err)
-	}
-
-	fmt.Print(string(contents))
+	fmt.Println(string(contents))
 }
