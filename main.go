@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./flow"
+	"../flow"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -68,7 +68,7 @@ func main() {
 	)
 
 	if err != nil {
-		panic(fmt.Sprintf("%#v", err))
+		panic(err)
 	}
 
 	fmt.Println(string(contents))
