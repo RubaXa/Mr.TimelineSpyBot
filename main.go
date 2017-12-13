@@ -1,21 +1,16 @@
 package main
 
 import (
-	"../flow"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
+
+	"../flow"
 )
 
-type Bot struct {
-	UIN    string
-	NICK   string
-	AIMSID string
-}
-
 type Env struct {
-	Bot Bot `json:"bot"`
+	Bot   map[string]string
+	Store map[string]string
 }
 
 func loadEnv() (env *Env, err error) {
@@ -36,40 +31,58 @@ func loadEnv() (env *Env, err error) {
 }
 
 func main() {
-	var env *Env
-	var response *http.Response
-	var contents []byte
-
-	err := flow.Go(
-		func() (err error) {
-			env, err = loadEnv()
-			return
-		},
-
-		func() (err error) {
-			endpoint := fmt.Sprintf(
-				"https://botapi.icq.net/fetchEvents?aimsid=%s&timeout=%d",
-				env.Bot.AIMSID,
-				60000,
-			)
-
-			fmt.Println("NICK ", env.Bot.NICK)
-			fmt.Println(string(endpoint))
-
-			response, err = http.Get(endpoint)
-			return
-		},
-
-		func() (err error) {
-			contents, err = ioutil.ReadAll(response.Body)
-			defer response.Body.Close()
-			return
-		},
-	)
+	env, err := loadEnv()
 
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(string(contents))
+	store, err := InitStore(env.Store)
+
+	if err != nil {
+		panic(err)
+	}
+
+	bot := CreateBot(env.Bot["uin"], env.Bot["nick"], env.Bot["aimsid"])
+	events, err := bot.FetchEvents()
+
+	if err != nil {
+		panic(err)
+	}
+
+	if err != nil {
+		panic(err)
+	}
+
+	for _, rec := range toTimelineRecords(events.Events) {
+		fmt.Printf("Insert: %#v\n", rec)
+
+		res, err := store.Records.Insert(rec)
+		fmt.Printf("Result: %#v, %#v\n", err, res)
+	}
+}
+
+func toTimelineRecords(events []Event) []TimelineRecord {
+	records := make([]TimelineRecord, 0, len(events))
+
+	for _, rawEvt := range events {
+		if rawEvt.Type == "im" {
+			evtData := rawEvt.GetIMData()
+			records = append(records, TimelineRecord{
+				Id: evtData.MsgID,
+				TS: evtData.Timestamp,
+				Source: TimelineRecordSource{
+					Id:   evtData.Source.AimID,
+					Name: evtData.Source.Friendly,
+				},
+				Author: TimelineRecordAuthor{
+					Login: evtData.MChatAttrs.Sender,
+					Name:  evtData.MChatAttrs.SenderName,
+				},
+				Body: evtData.Message,
+			})
+		}
+	}
+
+	return records
 }
