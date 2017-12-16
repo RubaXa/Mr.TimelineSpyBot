@@ -1,81 +1,75 @@
 package main
 
 import (
-	"encoding/json"
+	"./api"
+	"./env"
+	"./server"
+	"./space"
 	"fmt"
-	"io/ioutil"
-
-	"../flow"
 )
 
-type Env struct {
-	Bot   map[string]string
-	Store map[string]string
-}
+func main() {
+	go func() {
+		id := space.Records.GetLast()
+		fmt.Println(id)
+	}()
 
-func loadEnv() (env *Env, err error) {
-	var body []byte
-
-	err = flow.Go(
-		func() (err error) {
-			body, err = ioutil.ReadFile("./.env.json")
-			return
-		},
-
-		func() (err error) {
-			return json.Unmarshal(body, &env)
+	err := (&server.HttpServer{env.Get("http")["host"]}).Start(
+		server.Routes{
+			"/ping/":        api.Ping,
+			"/project/get/": api.Get,
+			"/project/reg/": api.Reg,
 		},
 	)
 
-	return
+	if err != nil {
+		panic(err)
+	}
+
+	//projects := &space.Projects{box.GetSpace(Env.Space["projects"])}
+	//project := projects.Get(24)
+
+	//project.AddChat
+	//spaceProjects.SelectOne(24, project)
+
+	//fmt.Printf("project: %#v\n", project)
+
+	//if !project.HasId() {
+	//	project.Name = "MailRu::Timeline"
+	//	err = spaceProjects.Insert(project)
+	//	fmt.Println("Res:", err)
+	//}
+
+	//records := box.GetSpace(env.Space["records"])
+	//
+	//bot := CreateBot(env.Bot["uin"], env.Bot["nick"], env.Bot["aimsid"])
+	//events, err := bot.FetchEvents()
+	//
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//for _, rec := range toTimelineRecords(events.Events) {
+	//	err := records.Insert(&rec)
+	//	fmt.Printf("Insert: %#v\n", rec)
+	//	fmt.Printf("Error: %#v\n", err)
+	//}
 }
 
-func main() {
-	env, err := loadEnv()
-
-	if err != nil {
-		panic(err)
-	}
-
-	store, err := InitStore(env.Store)
-
-	if err != nil {
-		panic(err)
-	}
-
-	bot := CreateBot(env.Bot["uin"], env.Bot["nick"], env.Bot["aimsid"])
-	events, err := bot.FetchEvents()
-
-	if err != nil {
-		panic(err)
-	}
-
-	if err != nil {
-		panic(err)
-	}
-
-	for _, rec := range toTimelineRecords(events.Events) {
-		fmt.Printf("Insert: %#v\n", rec)
-
-		res, err := store.Records.Insert(rec)
-		fmt.Printf("Result: %#v, %#v\n", err, res)
-	}
-}
-
-func toTimelineRecords(events []Event) []TimelineRecord {
-	records := make([]TimelineRecord, 0, len(events))
+func toTimelineRecords(events []Event) []space.RecordsEntry {
+	records := make([]space.RecordsEntry, 0, len(events))
 
 	for _, rawEvt := range events {
 		if rawEvt.Type == "im" {
 			evtData := rawEvt.GetIMData()
-			records = append(records, TimelineRecord{
-				Id: evtData.MsgID,
-				TS: evtData.Timestamp,
-				Source: TimelineRecordSource{
+			records = append(records, space.RecordsEntry{
+				MsgId: evtData.MsgID,
+				TS:    evtData.Timestamp,
+				Source: space.RecordsEntrySource{
 					Id:   evtData.Source.AimID,
 					Name: evtData.Source.Friendly,
 				},
-				Author: TimelineRecordAuthor{
+				Author: space.RecordsEntryAuthor{
 					Login: evtData.MChatAttrs.Sender,
 					Name:  evtData.MChatAttrs.SenderName,
 				},

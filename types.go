@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
 type Any interface{}
@@ -161,83 +160,4 @@ func (r *RawAPIResponse) AsFetchEvents() (*FetchEventsData, error) {
 		TimeToNextFetch: int(data["timeToNextFetch"].(float64)),
 		Events:          events,
 	}, nil
-}
-
-type TimelineRecordSource struct {
-	Id   string
-	Name string
-}
-
-func (s TimelineRecordSource) EncodeMsgpack(e *msgpack.Encoder) error {
-	if err := e.EncodeArrayLen(2); err != nil {
-		return err
-	}
-
-	if err := e.EncodeString(s.Id); err != nil {
-		return err
-	}
-
-	if err := e.EncodeString(s.Name); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-type TimelineRecordAuthor struct {
-	Login string
-	Name  string
-}
-
-func (a TimelineRecordAuthor) EncodeMsgpack(e *msgpack.Encoder) error {
-	if err := e.EncodeArrayLen(2); err != nil {
-		return err
-	}
-
-	if err := e.EncodeString(a.Login); err != nil {
-		return err
-	}
-
-	if err := e.EncodeString(a.Name); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-type TimelineRecord struct {
-	Id     string
-	TS     uint
-	Source TimelineRecordSource
-	Author TimelineRecordAuthor
-	Body   string
-}
-
-func (rec TimelineRecord) EncodeMsgpack(e *msgpack.Encoder) error {
-	if err := e.EncodeArrayLen(5); err != nil {
-		return err
-	}
-
-	if err := e.EncodeString(rec.Id); err != nil {
-		return err
-	}
-
-	if err := e.EncodeUint(rec.TS); err != nil {
-		return err
-	}
-
-	e.Encode(rec.Source)
-	e.Encode(rec.Author)
-
-	if err := e.EncodeString(rec.Body); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-type Project struct {
-	Id     uint
-	Name   string
-	LastId uint
 }
