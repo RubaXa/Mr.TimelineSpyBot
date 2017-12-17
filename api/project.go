@@ -2,37 +2,39 @@ package api
 
 import (
 	"../space"
-	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 )
 
-func Get(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseUint(r.URL.Query()["id"][0], 10, 64)
+func getProjectByQuery(query url.Values) (*space.ProjectsEntry, error) {
+	id, err := strconv.ParseUint(query["id"][0], 10, 64)
 
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusInternalServerError)
+		return nil, fmt.Errorf("Invalid ID")
 	}
 
 	project := space.Projects.Get(id)
 
-	if project.Key != r.URL.Query()["key"][0] {
-		http.Error(w, "Invalid KEY", http.StatusForbidden)
-		return
+	if project.Key != query["key"][0] {
+		return nil, fmt.Errorf("Invalid KEY")
 	}
 
-	jsonBody, err := json.Marshal(project)
-
-	if err != nil {
-		http.Error(w, "Error converting results to json", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonBody)
+	return project, nil
 }
 
-func Reg(w http.ResponseWriter, r *http.Request) {
+func ProjectGet(w http.ResponseWriter, r *http.Request) {
+	project, err := getProjectByQuery(r.URL.Query())
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	end(w, project)
+}
+
+func ProjectReg(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 
 	if err != nil {
@@ -51,13 +53,5 @@ func Reg(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonBody, err := json.Marshal(project)
-
-	if err != nil {
-		http.Error(w, "Error converting results to json", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonBody)
+	end(w, project)
 }

@@ -9,8 +9,25 @@ type sRecords struct {
 	baseSpace
 }
 
-func (r *sRecords) GetLast() *RecordsEntry {
-	r.space.
+func (r *sRecords) New() *RecordsEntry {
+	return &RecordsEntry{}
+}
+
+func (r *sRecords) GetLast() (*RecordsEntry, error) {
+	list := []RecordsEntry{}
+	err := r.space.EvalTyped(
+		"return box.space."+r.space.Name+".index.primary:max();",
+		[]interface{}{},
+		&list,
+	)
+
+	if err != nil {
+		return nil, err
+	} else if len(list) > 0 {
+		return &list[0], nil
+	}
+
+	return nil, nil
 }
 
 const RecordsEntrySize = 7
@@ -29,7 +46,7 @@ type RecordsEntry struct {
 func (rec *RecordsEntry) EncodeMsgpack(e *msgpack.Encoder) error {
 	rec.InitEncode(e, RecordsEntrySize)
 
-	e.EncodeUint64(rec.Id)
+	e.EncodeUint(rec.SeqNum)
 	e.EncodeString(rec.MsgId)
 	e.EncodeUint(rec.TS)
 
@@ -48,6 +65,21 @@ func (rec *RecordsEntry) EncodeMsgpack(e *msgpack.Encoder) error {
 
 func (rec *RecordsEntry) DecodeMsgpack(d *msgpack.Decoder) error {
 	rec.InitDecode(d, RecordsEntrySize)
+
+	rec.SeqNum, _ = d.DecodeUint()
+	rec.MsgId, _ = d.DecodeString()
+	rec.TS, _ = d.DecodeUint()
+
+	d.DecodeArrayLen()
+	rec.Source.Id, _ = d.DecodeString()
+	rec.Source.Name, _ = d.DecodeString()
+
+	d.DecodeArrayLen()
+	rec.Author.Login, _ = d.DecodeString()
+	rec.Source.Name, _ = d.DecodeString()
+
+	d.DecodeArrayLen()
+	rec.Body, _ = d.DecodeString()
 
 	return nil
 }

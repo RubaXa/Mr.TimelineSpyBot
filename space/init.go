@@ -7,6 +7,7 @@ import (
 
 var box *tnt.Box
 var Projects *sProjects
+var Tokens *sTokens
 var Records *sRecords
 
 func init() {
@@ -22,8 +23,10 @@ func init() {
 	}
 
 	Projects = &sProjects{}
+	Tokens = &sTokens{}
 	Records = &sRecords{}
 
 	Projects.Init(box.GetSpace(spaceEnv["projects"]))
+	Tokens.Init(box.GetSpace(spaceEnv["tokens"]))
 	Records.Init(box.GetSpace(spaceEnv["records"]))
 }

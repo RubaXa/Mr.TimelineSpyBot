@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -27,13 +28,13 @@ func (bot *Bot) Call(method string, query HttpQuery) (*RawAPIResponse, error) {
 	return result, err
 }
 
-func (bot *Bot) FetchEvents() (*FetchEventsData, error) {
-	fetch := func(url string, delay int) (data *FetchEventsData, err error) {
+func (bot *Bot) FetchEvents(seqNum uint) (*FetchEventsData, error) {
+	fetch := func(url string, delay int, query HttpQuery) (data *FetchEventsData, err error) {
 		if delay > 0 {
 			time.Sleep(time.Duration(delay) * time.Millisecond)
 		}
 
-		resp, err := bot.Call(url, HttpQuery{})
+		resp, err := bot.Call(url, query)
 
 		if err == nil {
 			data, err = resp.AsFetchEvents()
@@ -42,10 +43,10 @@ func (bot *Bot) FetchEvents() (*FetchEventsData, error) {
 		return
 	}
 
-	data, err := fetch("fetchEvents", 0)
+	data, err := fetch("fetchEvents", 0, HttpQuery{"seqNum": fmt.Sprint(seqNum)})
 
 	if err == nil {
-		data, err = fetch(data.FetchBaseURL, data.TimeToNextFetch)
+		data, err = fetch(data.FetchBaseURL, data.TimeToNextFetch, HttpQuery{})
 	}
 
 	return data, err

@@ -6,19 +6,35 @@ import (
 	"./server"
 	"./space"
 	"fmt"
+	"log"
 )
 
 func main() {
+	botEnv := env.Get("bot")
+	bot := CreateBot(botEnv["uin"], botEnv["nick"], botEnv["token"])
+
 	go func() {
-		id := space.Records.GetLast()
-		fmt.Println(id)
+		record, err := space.Records.GetLast()
+		lastSeqNum := uint(0)
+
+		if err != nil {
+			log.Fatal(err)
+		} else if record != nil {
+			lastSeqNum = record.SeqNum
+		}
+
+		fmt.Println(lastSeqNum)
+		//for {
+		//	events := bot.FetchEvents(lastSeqNum)
+		//}
 	}()
 
 	err := (&server.HttpServer{env.Get("http")["host"]}).Start(
 		server.Routes{
-			"/ping/":        api.Ping,
-			"/project/get/": api.Get,
-			"/project/reg/": api.Reg,
+			"/ping/":         api.Ping,
+			"/project/get/":  api.ProjectGet,
+			"/project/reg/":  api.ProjectReg,
+			"/token/create/": api.TokenCreate,
 		},
 	)
 
@@ -42,7 +58,6 @@ func main() {
 
 	//records := box.GetSpace(env.Space["records"])
 	//
-	//bot := CreateBot(env.Bot["uin"], env.Bot["nick"], env.Bot["aimsid"])
 	//events, err := bot.FetchEvents()
 	//
 	//if err != nil {

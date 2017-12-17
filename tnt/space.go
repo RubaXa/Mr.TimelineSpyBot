@@ -22,6 +22,16 @@ func (space *Space) Eval(code string, args []interface{}) (*tarantool.Response, 
 	return res, nil
 }
 
+func (space *Space) EvalTyped(code string, args []interface{}, res interface{}) error {
+	err := space.box.Client.EvalTyped(code, args, &res)
+
+	if err != nil {
+		return fmt.Errorf("[tnt] box.space.%s:evalTyped() failed: %s", space.Name, err.Error())
+	}
+
+	return nil
+}
+
 func (space *Space) Insert(entry ISpaceEntry) error {
 	if !entry.HasId() {
 		if id, err := space.box.GetNextId(); err != nil {
