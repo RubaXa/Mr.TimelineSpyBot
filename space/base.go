@@ -14,10 +14,14 @@ func (bs *baseSpace) Init(space *tnt.Space) {
 
 func (bs *baseSpace) Save(entry tnt.ISpaceEntry) error {
 	if entry.HasId() {
-		return bs.space.Update(entry)
+		return bs.space.Replace(entry)
 	} else {
 		return bs.space.Insert(entry)
 	}
+}
+
+func (bs *baseSpace) Delete(entry tnt.ISpaceEntry) error {
+	return bs.space.Delete(entry)
 }
 
 func (bs *baseSpace) GetLastId() uint64 {

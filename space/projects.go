@@ -28,6 +28,17 @@ func (p *sProjects) Get(id uint64) *ProjectsEntry {
 	}
 }
 
+func (p *sProjects) GetAll() ([]ProjectsEntry, error) {
+	var list []ProjectsEntry
+	err := p.space.SelectAll(&list)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
 const ProjectsEntrySize = 4
 
 type ProjectsEntry struct {
@@ -38,6 +49,29 @@ type ProjectsEntry struct {
 	Chats []string `json:"chats"`
 }
 
+func (entry *ProjectsEntry) HasChat(id string) bool {
+	for _, x := range entry.Chats {
+		if x == id {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (entry *ProjectsEntry) AddChat(id string) {
+	entry.Chats = append(entry.Chats, id)
+}
+
+func (entry *ProjectsEntry) RemoveChat(id string) {
+	for i, x := range entry.Chats {
+		if x == id {
+			entry.Chats = append(entry.Chats[:i], entry.Chats[:i+1]...)
+			break
+		}
+	}
+}
+
 func (entry *ProjectsEntry) EncodeMsgpack(e *msgpack.Encoder) (err error) {
 	entry.InitEncode(e, ProjectsEntrySize)
 
@@ -45,8 +79,9 @@ func (entry *ProjectsEntry) EncodeMsgpack(e *msgpack.Encoder) (err error) {
 	e.EncodeString(entry.Key)
 
 	e.EncodeArrayLen(len(entry.Chats))
-	for _, uin := range entry.Chats {
-		e.EncodeString(uin)
+
+	for _, id := range entry.Chats {
+		e.EncodeString(id)
 	}
 
 	return nil
@@ -63,7 +98,7 @@ func (entry *ProjectsEntry) DecodeMsgpack(d *msgpack.Decoder) (err error) {
 	} else {
 		entry.Chats = make([]string, n)
 		for i := 0; i < n; i++ {
-			d.Decode(&entry.Chats[i])
+			entry.Chats[i], _ = d.DecodeString()
 		}
 	}
 

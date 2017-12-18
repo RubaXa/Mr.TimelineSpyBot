@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mr.TimelineBot :: Dashboard</title>
+</head>
+<body>
+
+<div id="timeline">
+
+</div>
+
+<style>
+    #timeline {
+        padding-bottom: 20px;
+        line-height: 10px;
+        overflow: auto;
+        background: #fff;
+        position: relative;
+    }
+
+    .row {
+        position: relative;
+        font-family: sans-serif;
+        font-size: 9px;
+        padding-left: 5px;
+        height: 20px;
+    }
+
+    .row + .row {
+        border-top: 1px solid rgba(0, 0, 0, .05)
+    }
+
+    .row-label {
+        margin-top: 5px;
+        position: fixed;
+        font-size: 12px;
+    }
+
+    .item {
+        width: 10px;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, .2);
+        border-radius: 5px;
+        position: absolute;
+        cursor: pointer;
+    }
+
+    .item:hover {
+        box-shadow: 0 1px 1px rgba(0, 0, 0, .4);
+    }
+
+    .item b {
+        font-weight: normal;
+        font-family: sans-serif;
+        font-size: 9px;
+        position: absolute;
+        left: 100%;
+        top: -2px;
+        margin-left: 2px
+    }
+
+    .empty {
+        top: 0;
+        color: red;
+        border-left: 1px dotted red;
+        border-right: 1px dotted red;
+        height: 100%;
+        z-index: 10000;
+        position: absolute;
+        font-family: sans-serif;
+        font-size: 12px;
+        text-align: center;
+        background-image: linear-gradient(
+                -45deg,
+                rgba(255, 0, 0, .2) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(255, 0, 0, .2) 50%,
+                rgba(255, 0, 0, .2) 75%,
+                transparent 75%,
+                transparent
+        );
+        background-size: 8px 8px;
+    }
+
+    .empty:before {
+        display: inline-block;
+        content: '';
+        height: 100%;
+        vertical-align: middle;
+    }
+</style>
+
+<script>
+    const getNextColor = (function getNextColorFactory() {
+        const store = {};
+        const step = 30;
+        let deg = -40 - step;
+
+        return function randomHsl(name) {
+            if (!store[name]) {
+                deg += step;
+                store[name] = {
+                    deg,
+                    getValue(opacity) {
+                        return `hsla(${this.deg}, 70%, 50%, ${opacity || 1})`;
+                    }
+                };
+            }
+
+            return store[name];
+        };
+    })();
+
+    function get(method) {
+        return fetch(`/${method}/?id=25&token=4a9a4c84-e411-11e7-b7e1-10ddb1ad612a`).then(r => r.json())
+    }
+
+    Promise.all([
+        get('buddy/list'),
+        get('record/list'),
+    ]).then(([buddyList, records]) => {
+        buddyList.forEach(({id, name}) => {
+            const color = getNextColor(id);
+
+            timeline.innerHTML += `
+                <div class="row" style="color: ${color.getValue(1)}; background: ${color.getValue(0.15)};">
+                    <div class="row-label">${name}</div>
+                </div>
+            `;
+        })
+    })
+</script>
+
+</body>
+</html>

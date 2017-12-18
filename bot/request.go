@@ -1,10 +1,11 @@
-package main
+package bot
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 type HttpQuery map[string]string
@@ -41,8 +42,15 @@ func HttpGet(u string, query HttpQuery) *ResponseChan {
 			values.Add(k, v)
 		}
 
+		if !strings.Contains(u, "?") {
+			u += "?"
+		}
+
+		u += values.Encode()
 		result := HttpResponse{}
-		response, err := http.Get(u + "?" + values.Encode())
+		response, err := http.Get(u)
+
+		//fmt.Println(u)
 
 		if err != nil {
 			result.Error = err

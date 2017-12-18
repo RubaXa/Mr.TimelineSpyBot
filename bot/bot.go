@@ -1,4 +1,4 @@
-package main
+package bot
 
 import (
 	"fmt"
@@ -28,8 +28,20 @@ func (bot *Bot) Call(method string, query HttpQuery) (*RawAPIResponse, error) {
 	return result, err
 }
 
+func (bot *Bot) GetBuddyList() (*BuddyList, error) {
+	resp, err := bot.Call("getBuddyList", HttpQuery{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.AsBuddyList()
+}
+
 func (bot *Bot) FetchEvents(seqNum uint) (*FetchEventsData, error) {
-	fetch := func(url string, delay int, query HttpQuery) (data *FetchEventsData, err error) {
+	query := HttpQuery{"seqNum": fmt.Sprint(seqNum)}
+
+	fetch := func(url string, delay int) (data *FetchEventsData, err error) {
 		if delay > 0 {
 			time.Sleep(time.Duration(delay) * time.Millisecond)
 		}
@@ -43,10 +55,10 @@ func (bot *Bot) FetchEvents(seqNum uint) (*FetchEventsData, error) {
 		return
 	}
 
-	data, err := fetch("fetchEvents", 0, HttpQuery{"seqNum": fmt.Sprint(seqNum)})
+	data, err := fetch("fetchEvents", 0)
 
 	if err == nil {
-		data, err = fetch(data.FetchBaseURL, data.TimeToNextFetch, HttpQuery{})
+		data, err = fetch(data.FetchBaseURL, data.TimeToNextFetch)
 	}
 
 	return data, err

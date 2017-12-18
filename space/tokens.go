@@ -2,6 +2,7 @@ package space
 
 import (
 	"../tnt"
+	"github.com/google/uuid"
 	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
@@ -9,9 +10,41 @@ type sTokens struct {
 	baseSpace
 }
 
+func (t *sTokens) Has(value string) bool {
+	token, _ := t.GetByValue(value)
+	return token != nil && token.HasId()
+}
+
+func (t *sTokens) GetByValue(value string) (*TokensEntry, error) {
+	var tokens []TokensEntry
+
+	err := t.space.Select(&tokens, tnt.Request{
+		Index:  "token",
+		Values: []interface{}{value},
+		Limit:  1,
+	})
+
+	if err != nil {
+		return nil, err
+	} else if len(tokens) > 0 {
+		return &tokens[0], nil
+	}
+
+	return nil, nil
+}
+
 func (t *sTokens) Create(pId uint64) (*TokensEntry, error) {
-	token := &TokensEntry{ProjectId: pId}
-	err := t.Save(token)
+	uid, err := uuid.NewUUID()
+
+	if err != nil {
+		return nil, err
+	}
+
+	token := &TokensEntry{
+		ProjectId: pId,
+		Value:     uid.String(),
+	}
+	err = t.Save(token)
 
 	if err != nil {
 		return nil, err

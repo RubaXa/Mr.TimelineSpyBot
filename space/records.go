@@ -13,6 +13,23 @@ func (r *sRecords) New() *RecordsEntry {
 	return &RecordsEntry{}
 }
 
+func (r *sRecords) Select(pId uint64, offset, limit uint32) ([]RecordsEntry, error) {
+	var list []RecordsEntry
+
+	err := r.space.Select(&list, tnt.Request{
+		Index:  "project",
+		Offset: offset,
+		Limit:  limit,
+		Values: []interface{}{pId},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
 func (r *sRecords) GetLast() (*RecordsEntry, error) {
 	list := []RecordsEntry{}
 	err := r.space.EvalTyped(
@@ -30,22 +47,24 @@ func (r *sRecords) GetLast() (*RecordsEntry, error) {
 	return nil, nil
 }
 
-const RecordsEntrySize = 7
+const RecordsEntrySize = 8
 
 type RecordsEntry struct {
 	tnt.SpaceEntry
 
-	SeqNum uint
-	MsgId  string
-	TS     uint
-	Source RecordsEntrySource
-	Author RecordsEntryAuthor
-	Body   string
+	ProjectId uint64             `json:"project_id"`
+	SeqNum    uint               `json:"seq_num"`
+	MsgId     string             `json:"msg_id"`
+	TS        uint               `json:"ts"`
+	Source    RecordsEntrySource `json:"source"`
+	Author    RecordsEntryAuthor `json:"author"`
+	Body      string             `json:"body"`
 }
 
 func (rec *RecordsEntry) EncodeMsgpack(e *msgpack.Encoder) error {
 	rec.InitEncode(e, RecordsEntrySize)
 
+	e.EncodeUint64(rec.ProjectId)
 	e.EncodeUint(rec.SeqNum)
 	e.EncodeString(rec.MsgId)
 	e.EncodeUint(rec.TS)
@@ -66,6 +85,7 @@ func (rec *RecordsEntry) EncodeMsgpack(e *msgpack.Encoder) error {
 func (rec *RecordsEntry) DecodeMsgpack(d *msgpack.Decoder) error {
 	rec.InitDecode(d, RecordsEntrySize)
 
+	rec.ProjectId, _ = d.DecodeUint64()
 	rec.SeqNum, _ = d.DecodeUint()
 	rec.MsgId, _ = d.DecodeString()
 	rec.TS, _ = d.DecodeUint()
@@ -76,20 +96,19 @@ func (rec *RecordsEntry) DecodeMsgpack(d *msgpack.Decoder) error {
 
 	d.DecodeArrayLen()
 	rec.Author.Login, _ = d.DecodeString()
-	rec.Source.Name, _ = d.DecodeString()
+	rec.Author.Name, _ = d.DecodeString()
 
-	d.DecodeArrayLen()
 	rec.Body, _ = d.DecodeString()
 
 	return nil
 }
 
 type RecordsEntrySource struct {
-	Id   string
-	Name string
+	Id   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type RecordsEntryAuthor struct {
-	Login string
-	Name  string
+	Login string `json:"login"`
+	Name  string `json:"name"`
 }

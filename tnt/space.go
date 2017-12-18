@@ -50,24 +50,36 @@ func (space *Space) Insert(entry ISpaceEntry) error {
 	return nil
 }
 
-func (space *Space) Update(entry ISpaceEntry) error {
+func (space *Space) Replace(entry ISpaceEntry) error {
 	if !entry.HasId() {
-		if id, err := space.box.GetNextId(); err != nil {
-			return err
-		} else {
-			entry.SetId(id)
-		}
+		return fmt.Errorf("[tnt] box.space.%s:replace() failed: %#v", space.Name, entry)
 	}
 
-	_, err := space.box.Client.Update(
+	_, err := space.box.Client.Replace(
 		space.Name,
-		"primary",
-		[]interface{}{entry.GetId()},
 		entry,
 	)
 
 	if err != nil {
-		return fmt.Errorf("[tnt] box.space.%s:update() failed: %s", space.Name, err.Error())
+		return fmt.Errorf("[tnt] box.space.%s:replace() failed: %s", space.Name, err.Error())
+	}
+
+	return nil
+}
+
+func (space *Space) Delete(entry ISpaceEntry) error {
+	if !entry.HasId() {
+		_, err := space.box.Client.Delete(
+			space.Name,
+			"primary",
+			[]interface{}{entry.GetId()},
+		)
+
+		if err != nil {
+			return fmt.Errorf("[tnt] box.space.%s:update() failed: %s", space.Name, err.Error())
+		}
+
+		entry.SetId(0)
 	}
 
 	return nil
@@ -84,7 +96,7 @@ func (space *Space) SelectOne(id uint64, entry ISpaceEntry) error {
 	return err
 }
 
-func (space *Space) SelectAll(list *[]interface{}) error {
+func (space *Space) SelectAll(list interface{}) error {
 	return space.box.Client.SelectTyped(
 		space.Name,
 		"primary",
@@ -92,7 +104,34 @@ func (space *Space) SelectAll(list *[]interface{}) error {
 		math.MaxInt32,
 		tarantool.IterAll,
 		[]interface{}{},
-		list,
+		&list,
+	)
+}
+
+type Request struct {
+	Index  string
+	Offset uint32
+	Limit  uint32
+	Iter   string
+	Values []interface{}
+}
+
+func (space *Space) Select(result interface{}, req Request) error {
+	index := "primary"
+	iter := tarantool.IterEq
+
+	if req.Index != "" {
+		index = req.Index
+	}
+
+	return space.box.Client.SelectTyped(
+		space.Name,
+		index,
+		req.Offset,
+		req.Limit,
+		iter,
+		req.Values,
+		result,
 	)
 }
 

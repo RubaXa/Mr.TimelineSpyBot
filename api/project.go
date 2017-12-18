@@ -9,15 +9,32 @@ import (
 )
 
 func getProjectByQuery(query url.Values) (*space.ProjectsEntry, error) {
-	id, err := strconv.ParseUint(query["id"][0], 10, 64)
+	qid, ok := query["id"]
+
+	if !ok {
+		return nil, fmt.Errorf("Extract ID")
+	}
+
+	id, err := strconv.ParseUint(qid[0], 10, 64)
 
 	if err != nil {
-		return nil, fmt.Errorf("Invalid ID")
+		return nil, fmt.Errorf("Invalid ID: %#v", qid)
 	}
 
 	project := space.Projects.Get(id)
 
-	if project.Key != query["key"][0] {
+	if project == nil {
+		return nil, fmt.Errorf("Invalid ID: %d", id)
+	}
+
+	key := query["key"]
+	token, tokenExists := query["token"]
+
+	if tokenExists {
+		if !space.Tokens.Has(token[0]) {
+			return nil, fmt.Errorf("Invalid TOKEN: %s", token[0])
+		}
+	} else if project.Key != key[0] {
 		return nil, fmt.Errorf("Invalid KEY")
 	}
 
@@ -29,6 +46,7 @@ func ProjectGet(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	end(w, project)

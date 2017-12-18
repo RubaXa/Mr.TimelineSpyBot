@@ -1,11 +1,10 @@
-package main
+package bot
 
 import (
 	"encoding/json"
 	"fmt"
 )
 
-type Any interface{}
 type MapOfAny map[string]interface{}
 
 type ServiceURL struct {
@@ -50,7 +49,9 @@ type EventRawMsg struct {
 }
 
 func (rawMsg *EventRawMsg) Parse(data interface{}) {
-	rawMsg.Base64Msg = data.(map[string]interface{})["base64Msg"].(string)
+	if data != nil {
+		rawMsg.Base64Msg = data.(map[string]interface{})["base64Msg"].(string)
+	}
 }
 
 type EventSource struct {
@@ -160,4 +161,64 @@ func (r *RawAPIResponse) AsFetchEvents() (*FetchEventsData, error) {
 		TimeToNextFetch: int(data["timeToNextFetch"].(float64)),
 		Events:          events,
 	}, nil
+}
+
+type Buddy struct {
+	AimId     string `json:"aim_id"`
+	DisplayId string `json:"display_id"`
+	Friendly  string `json:"friendly"`
+	UserType  string `json:"user_type"`
+}
+
+func (g *Buddy) Parse(raw map[string]interface{}) {
+	g.AimId = raw["aimId"].(string)
+	g.DisplayId = raw["displayId"].(string)
+	g.Friendly = raw["friendly"].(string)
+	g.UserType = raw["userType"].(string)
+}
+
+type BuddyGroup struct {
+	Id      uint64  `json:"id"`
+	Name    string  `json:"name"`
+	Buddies []Buddy `json:"buddies"`
+}
+
+func (g *BuddyGroup) Parse(raw map[string]interface{}) {
+	g.Id = uint64(raw["id"].(float64))
+	g.Name = raw["name"].(string)
+
+	buddies := raw["buddies"].([]interface{})
+	g.Buddies = make([]Buddy, len(buddies))
+
+	for i, b := range buddies {
+		g.Buddies[i].Parse(b.(map[string]interface{}))
+	}
+}
+
+type BuddyList struct {
+	Groups []BuddyGroup `json:"groups"`
+}
+
+func (bl *BuddyList) Norm() []*Buddy {
+	list := make([]*Buddy, 0, 10)
+
+	for _, group := range bl.Groups {
+		for _, buddy := range group.Buddies {
+			list = append(list, &buddy)
+		}
+	}
+
+	return list
+}
+
+func (r *RawAPIResponse) AsBuddyList() (*BuddyList, error) {
+	list := &BuddyList{}
+	groups := r.Response.Data["groups"].([]interface{})
+	list.Groups = make([]BuddyGroup, len(groups))
+
+	for i, g := range groups {
+		list.Groups[i].Parse(g.(map[string]interface{}))
+	}
+
+	return list, nil
 }
