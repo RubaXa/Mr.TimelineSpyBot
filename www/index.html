@@ -1,135 +1,295 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Mr.TimelineBot :: Dashboard</title>
+	<meta charset="UTF-8">
+	<title>Timeline</title>
 </head>
 <body>
 
 <div id="timeline">
+	<div id="wrapper">
 
+	</div>
 </div>
 
 <style>
-    #timeline {
-        padding-bottom: 20px;
-        line-height: 10px;
-        overflow: auto;
-        background: #fff;
-        position: relative;
-    }
+	body, html {
+		margin: 0;
+		padding: 0;
+		height: 100%;
+		font-family: sans-serif;
+	}
 
-    .row {
-        position: relative;
-        font-family: sans-serif;
-        font-size: 9px;
-        padding-left: 5px;
-        height: 20px;
-    }
+	#timeline {
+		width: 100%;
+		height: 100%;
+		overflow-y: scroll;
+		background: #fff;
+		position: relative;
+	}
 
-    .row + .row {
-        border-top: 1px solid rgba(0, 0, 0, .05)
-    }
+	#timeline::-webkit-scrollbar {
+		-webkit-appearance: none;
+        width: 0;
+        height: 10px;
+	}
 
-    .row-label {
-        margin-top: 5px;
-        position: fixed;
-        font-size: 12px;
-    }
-
-    .item {
-        width: 10px;
-        box-shadow: 0 1px 1px rgba(0, 0, 0, .2);
-        border-radius: 5px;
-        position: absolute;
+	#timeline::-webkit-scrollbar-thumb {
         cursor: pointer;
-    }
+		background-color: rgba(0,0,0,.2);
+		-webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+	}
 
-    .item:hover {
-        box-shadow: 0 1px 1px rgba(0, 0, 0, .4);
-    }
+	#wrapper {
+		position: relative;
+	}
 
-    .item b {
-        font-weight: normal;
-        font-family: sans-serif;
-        font-size: 9px;
-        position: absolute;
-        left: 100%;
-        top: -2px;
-        margin-left: 2px
-    }
+	.row {
+		position: relative;
+		font-size: 9px;
+		padding-left: 5px;
+		height: 20px;
+		width: 100%;
+		z-index: 1000;
+	}
 
-    .empty {
-        top: 0;
-        color: red;
-        border-left: 1px dotted red;
-        border-right: 1px dotted red;
-        height: 100%;
-        z-index: 10000;
-        position: absolute;
-        font-family: sans-serif;
+	.row + .row {
+		border-top: 1px solid rgba(0, 0, 0, .05)
+	}
+
+	.row-label {
+		height: 20px;
+		padding-right: 10px;
+		padding-left: 10px;
+		position: fixed;
+		font-size: 14px;
+		line-height: 20px;
+		right: 0;
+        border-radius: 3px;
+	}
+
+	.item {
+		width: 6px;
+		height: 12px;
+		top: 50%;
+		transform: translate(-3px, -50%);
+		box-shadow: 0 1px 1px rgba(0, 0, 0, .2);
+		border-radius: 3px;
+		position: absolute;
+		cursor: pointer;
+	}
+
+	.item:hover {
+		box-shadow: 0 1px 1px rgba(0, 0, 0, .4);
+	}
+
+	.item b {
+		font-weight: normal;
+		font-family: sans-serif;
+		font-size: 9px;
+		position: absolute;
+		left: 100%;
+		top: -2px;
+		margin-left: 2px
+	}
+
+	.empty {
+		top: 0;
+		color: red;
+		border-left: 1px dotted red;
+		border-right: 1px dotted red;
+		height: 100%;
+		z-index: 10000;
+		position: absolute;
+		font-family: sans-serif;
+		font-size: 12px;
+		text-align: center;
+		background-image: linear-gradient(
+				-45deg,
+				rgba(255, 0, 0, .2) 25%,
+				transparent 25%,
+				transparent 50%,
+				rgba(255, 0, 0, .2) 50%,
+				rgba(255, 0, 0, .2) 75%,
+				transparent 75%,
+				transparent
+		);
+		background-size: 8px 8px;
+	}
+	    .empty:before {
+		display: inline-block;
+		content: '';
+		height: 100%;
+		vertical-align: middle;
+	}
+
+    .bubble {
         font-size: 12px;
-        text-align: center;
-        background-image: linear-gradient(
-                -45deg,
-                rgba(255, 0, 0, .2) 25%,
-                transparent 25%,
-                transparent 50%,
-                rgba(255, 0, 0, .2) 50%,
-                rgba(255, 0, 0, .2) 75%,
-                transparent 75%,
-                transparent
-        );
-        background-size: 8px 8px;
+        position: absolute;
+        transform: translate(-50%, 0);
+        top: 100%;
+        left: 50%;
     }
 
-    .empty:before {
-        display: inline-block;
-        content: '';
-        height: 100%;
-        vertical-align: middle;
+    .minutes {
+        position: relative;
+        height: 10px;
+        z-index: 100;
     }
+        .minutes::before {
+            display: block;
+            content: '';
+            height: 5px;
+            width: 100%;
+            position: absolute;
+            background-size: 3px 3px;
+            background-image: linear-gradient(to right, #ccc 1px, transparent 1px)
+        }
+        .minutes::after {
+            display: block;
+            content: '';
+            height: 10px;
+            width: 100%;
+            position: absolute;
+            background-size: 90px 3px;
+            background-image: linear-gradient(to right, #333 1px, transparent 1px)
+        }
+
+
+	    .minutes .seg {
+            top: 10px;
+            position: absolute;
+            font-size: 9px;
+            transform: translate(-50%,0);
+        }
 </style>
 
+<script src="//unpkg.com/popper.js@1.12.9/dist/umd/popper.js"></script>
 <script>
-    const getNextColor = (function getNextColorFactory() {
-        const store = {};
-        const step = 30;
-        let deg = -40 - step;
+    const env = {/*env*/};
+	const getNextColor = (function getNextColorFactory() {
+		const store = {};
+		const step = 30;
+		let deg = -40 - step;
 
-        return function randomHsl(name) {
-            if (!store[name]) {
-                deg += step;
-                store[name] = {
-                    deg,
-                    getValue(opacity) {
-                        return `hsla(${this.deg}, 70%, 50%, ${opacity || 1})`;
-                    }
-                };
-            }
+		return function randomHsl(name) {
+			if (!store[name]) {
+				deg += step;
+				store[name] = {
+					deg,
+					getValue(opacity) {
+						return `hsla(${this.deg}, 70%, 50%, ${opacity || 1})`;
+					},
+				};
+			}
 
-            return store[name];
-        };
-    })();
+			return store[name];
+		};
+	})();
 
-    function get(method) {
-        return fetch(`/${method}/?id=25&token=4a9a4c84-e411-11e7-b7e1-10ddb1ad612a`).then(r => r.json())
+	function now() {
+		return env.ts + performance.now();
     }
 
-    Promise.all([
-        get('buddy/list'),
-        get('record/list'),
-    ]).then(([buddyList, records]) => {
-        buddyList.forEach(({id, name}) => {
-            const color = getNextColor(id);
+	function getJSON(method) {
+		return fetch(`/${method}/${location.search}`).then(r => r.json())
+	}
 
-            timeline.innerHTML += `
-                <div class="row" style="color: ${color.getValue(1)}; background: ${color.getValue(0.15)};">
-                    <div class="row-label">${name}</div>
-                </div>
+	const dotWidth = 3;
+	const minute = 60;
+
+	Promise.all([
+		getJSON('buddy/list'),
+		getJSON('record/list'),
+	]).then(([buddyList, records]) => {
+		const start = new Date(records[0].ts * 1000);
+		const end = new Date(now());
+
+		start.setMinutes(0);
+		start.setMilliseconds(0);
+
+        end.setMinutes(end.getMinutes());
+		end.setMilliseconds(0);
+
+		const minTs = start.getTime()/1000;
+		const maxTs = end.getTime()/1000;
+		const length = maxTs - minTs;
+		let html = '';
+
+		buddyList.forEach(({id, name}) => {
+			const color = getNextColor(id);
+
+			html += `
+				<div class="row" style="
+					color: ${color.getValue(1)};
+					background: ${color.getValue(0.15)};
+				">
+					${items(id, records, minTs, maxTs, color)}
+					<div class="row-label" style="background: ${color.getValue(0.15)};">${name}</div>
+				</div>
             `;
-        })
-    })
+		});
+
+		const time = new Date(start.getTime());
+
+		html += '<div class="minutes">';
+		do {
+			const min = time.getMinutes();
+
+			html += `<div class="seg" style="
+                left: ${(time - start) / (minute * 1000) * dotWidth}px;
+            ">${timeFormat(time)}</div>`;
+			time.setMinutes(min + 30);
+        } while (time.getTime() < end.getTime());
+		html += '</div>';
+
+		wrapper.innerHTML = html;
+		wrapper.style.width = `${length / minute * dotWidth + 100}px`;
+		timeline.scrollLeft += wrapper.offsetWidth;
+	});
+
+	function zeroPad(n) {
+		return n < 10 ? `0${n}` : n;
+    }
+
+	function timeFormat(time) {
+		return `${zeroPad(time.getHours())}:${zeroPad(time.getMinutes())}`;
+    }
+
+    function group(id, records) {
+        let prev;
+
+		return records.reduce((list, r) => {
+			if (r.source.id === id) {
+                if (!prev || (r.ts - prev.ts) > 60) {
+					list.push(prev = {
+						ts: r.ts,
+						cnt: 0,
+						body: [],
+					});
+				}
+
+				prev.cnt++;
+				prev.body.push(`[${timeFormat(new Date(r.ts*1000))}]: ${r.body}`);
+			}
+
+			return list;
+        }, []);
+    }
+
+	function items(id, records, minTs, maxTs, color) {
+		return group(id, records).reduce((html, r) => {
+            const y = (r.ts - minTs) / minute * dotWidth;
+
+            return `${html}<div class="item"
+                style="
+                    left: ${y}px;
+                    background: ${color.getValue(1)};
+                "
+                title="${r.body.join('\n---\n').replace(/\"/g, '&#34;')}"
+            >${r.cnt > 1 ? `<div class="bubble">${r.cnt}</div>` : ''}</div>`;
+		}, '');
+	}
 </script>
 
 </body>
