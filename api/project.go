@@ -9,16 +9,32 @@ import (
 )
 
 func getProjectByQuery(query url.Values) (*space.ProjectsEntry, error) {
-	qid, ok := query["id"]
+	var id uint64
 
-	if !ok {
-		return nil, fmt.Errorf("Extract ID")
-	}
+	tokenValue, tokenExists := query["token"]
 
-	id, err := strconv.ParseUint(qid[0], 10, 64)
+	if tokenExists {
+		token, err := space.Tokens.GetByValue(tokenValue[0])
 
-	if err != nil {
-		return nil, fmt.Errorf("Invalid ID: %#v", qid)
+		if err != nil {
+			return nil, err
+		}
+
+		id = token.ProjectId
+	} else {
+		qid, ok := query["id"]
+
+		if !ok {
+			return nil, fmt.Errorf("Extract ID")
+		}
+
+		pid, err := strconv.ParseUint(qid[0], 10, 64)
+
+		if err != nil {
+			return nil, fmt.Errorf("Invalid ID: %#v", qid)
+		}
+
+		id = pid
 	}
 
 	project := space.Projects.Get(id)
@@ -27,15 +43,12 @@ func getProjectByQuery(query url.Values) (*space.ProjectsEntry, error) {
 		return nil, fmt.Errorf("Invalid ID: %d", id)
 	}
 
-	key := query["key"]
-	token, tokenExists := query["token"]
+	if !tokenExists {
+		key := query["key"]
 
-	if tokenExists {
-		if !space.Tokens.Has(token[0]) {
-			return nil, fmt.Errorf("Invalid TOKEN: %s", token[0])
+		if project.Key != key[0] {
+			return nil, fmt.Errorf("Invalid KEY")
 		}
-	} else if project.Key != key[0] {
-		return nil, fmt.Errorf("Invalid KEY")
 	}
 
 	return project, nil

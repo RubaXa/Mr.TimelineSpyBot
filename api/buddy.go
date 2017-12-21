@@ -32,9 +32,11 @@ func BuddyList(w http.ResponseWriter, r *http.Request) {
 
 	for i := range list {
 		list[i].Id = project.Chats[i]
+
 		for _, buddy := range buddyList.Norm() {
 			if buddy.AimId == list[i].Id {
 				list[i].Name = buddy.Friendly
+				break
 			}
 		}
 	}

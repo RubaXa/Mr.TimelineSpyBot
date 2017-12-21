@@ -69,9 +69,8 @@ func (rec *RecordsEntry) EncodeMsgpack(e *msgpack.Encoder) error {
 	e.EncodeString(rec.MsgId)
 	e.EncodeUint(rec.TS)
 
-	e.EncodeArrayLen(2)
+	e.EncodeArrayLen(1)
 	e.EncodeString(rec.Source.Id)
-	e.EncodeString(rec.Source.Name)
 
 	e.EncodeArrayLen(2)
 	e.EncodeString(rec.Author.Login)
@@ -90,9 +89,13 @@ func (rec *RecordsEntry) DecodeMsgpack(d *msgpack.Decoder) error {
 	rec.MsgId, _ = d.DecodeString()
 	rec.TS, _ = d.DecodeUint()
 
-	d.DecodeArrayLen()
+	l, _ := d.DecodeArrayLen()
 	rec.Source.Id, _ = d.DecodeString()
-	rec.Source.Name, _ = d.DecodeString()
+
+	if l == 2 {
+		// Skip
+		d.DecodeString()
+	}
 
 	d.DecodeArrayLen()
 	rec.Author.Login, _ = d.DecodeString()
@@ -104,8 +107,7 @@ func (rec *RecordsEntry) DecodeMsgpack(d *msgpack.Decoder) error {
 }
 
 type RecordsEntrySource struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Id string `json:"id"`
 }
 
 type RecordsEntryAuthor struct {

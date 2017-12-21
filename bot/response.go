@@ -38,10 +38,12 @@ type EventMChatAttrs struct {
 }
 
 func (attrs *EventMChatAttrs) Parse(data interface{}) {
-	raw := data.(map[string]interface{})
-	attrs.ChatName = raw["chat_name"].(string)
-	attrs.Sender = raw["sender"].(string)
-	attrs.SenderName = raw["senderName"].(string)
+	raw, ok := data.(map[string]interface{})
+	if ok {
+		attrs.ChatName = raw["chat_name"].(string)
+		attrs.Sender = raw["sender"].(string)
+		attrs.SenderName = raw["senderName"].(string)
+	}
 }
 
 type EventRawMsg struct {
@@ -92,10 +94,10 @@ func (evt *Event) GetIMData() (res IMEventData) {
 		res.Source.Parse(raw["source"])
 
 		res.Autoresponse = int(raw["autoresponse"].(float64))
-		res.Imf = raw["imf"].(string)
-		res.Message = raw["message"].(string)
-		res.MsgID = raw["msgId"].(string)
-		res.Notification = raw["notification"].(string)
+		res.Imf, _ = raw["imf"].(string)
+		res.Message, _ = raw["message"].(string)
+		res.MsgID, _ = raw["msgId"].(string)
+		res.Notification, _ = raw["notification"].(string)
 		res.Timestamp = uint(raw["timestamp"].(float64))
 
 	}
@@ -204,7 +206,8 @@ func (bl *BuddyList) Norm() []*Buddy {
 
 	for _, group := range bl.Groups {
 		for _, buddy := range group.Buddies {
-			list = append(list, &buddy)
+			copy := buddy
+			list = append(list, &copy)
 		}
 	}
 

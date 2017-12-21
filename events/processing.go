@@ -63,8 +63,9 @@ func getProjectsByChat(id string) []*space.ProjectsEntry {
 	return projectsIndexByChat[id]
 }
 
-func Processing(seqNum uint, events []bot.Event) uint {
+func Processing(seqNum uint, events []bot.Event) (uint, []space.RecordsEntry) {
 	fmt.Println("Events processing:", len(events))
+	records := make([]space.RecordsEntry, 0)
 
 	for _, rawEvt := range events {
 		seqNum = rawEvt.SeqNum + 1
@@ -77,12 +78,12 @@ func Processing(seqNum uint, events []bot.Event) uint {
 			} else if strings.Contains(record.Body, "timeline.unbind") {
 				binding(record, false)
 			} else {
-				trySaveRecord(record)
+				records = append(records, trySaveRecord(record)...)
 			}
 		}
 	}
 
-	return seqNum
+	return seqNum, records
 }
 
 func toRecordsEntry(event bot.Event) *space.RecordsEntry {
@@ -93,8 +94,7 @@ func toRecordsEntry(event bot.Event) *space.RecordsEntry {
 		SeqNum: event.SeqNum,
 		TS:     data.Timestamp,
 		Source: space.RecordsEntrySource{
-			Id:   data.Source.AimID,
-			Name: data.Source.Friendly,
+			Id: data.Source.AimID,
 		},
 		Author: space.RecordsEntryAuthor{
 			Login: data.MChatAttrs.Sender,
@@ -107,6 +107,8 @@ func toRecordsEntry(event bot.Event) *space.RecordsEntry {
 func binding(record *space.RecordsEntry, bind bool) {
 	detail := strings.Split(record.Body, " ")
 	token, err := space.Tokens.GetByValue(detail[1])
+
+	fmt.Printf("binding: %#v\n", bind)
 
 	if err != nil {
 		fmt.Println("token.err", err)
@@ -141,13 +143,14 @@ func binding(record *space.RecordsEntry, bind bool) {
 		return
 	}
 
-	fmt.Printf("project.chats.added: %#v\n", project.Chats)
+	fmt.Printf("project.chats: %#v\n", project.Chats)
 	delete(projectsIndexByChat, record.Source.Id)
 	space.Projects.Delete(token)
 }
 
-func trySaveRecord(record *space.RecordsEntry) {
+func trySaveRecord(record *space.RecordsEntry) []space.RecordsEntry {
 	projects := getProjectsByChat(record.Source.Id)
+	records := make([]space.RecordsEntry, 0, len(projects))
 
 	fmt.Printf("Save message: %#v\n", record)
 
@@ -158,6 +161,10 @@ func trySaveRecord(record *space.RecordsEntry) {
 
 		if err != nil {
 			fmt.Printf("Failed save to %#v: %#v\n", project, err)
+		} else {
+			records = append(records, copy)
 		}
 	}
+
+	return records
 }

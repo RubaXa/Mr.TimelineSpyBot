@@ -8,8 +8,9 @@
 
 <div id="timeline">
 	<div id="wrapper">
-
 	</div>
+
+    <div id="cursor" style="display: none"></div>
 </div>
 
 <style>
@@ -19,6 +20,10 @@
 		height: 100%;
 		font-family: sans-serif;
 	}
+
+    #cursor {
+        position: absolute;
+    }
 
 	#timeline {
 		width: 100%;
@@ -164,7 +169,6 @@
         }
 </style>
 
-<script src="//unpkg.com/popper.js@1.12.9/dist/umd/popper.js"></script>
 <script>
     const env = {/*env*/};
 	const getNextColor = (function getNextColorFactory() {
@@ -186,13 +190,46 @@
 			return store[name];
 		};
 	})();
+	const ws = (function () {
+		const socket = new WebSocket("ws://localhost:3319/ws/" + env.token);
+		const listeners = {};
+
+		socket.onopen = function() {
+			console.info('Соединение установлено.');
+		};
+
+		socket.onclose = function(event) {
+			if (event.wasClean) {
+				console.info('Соединение закрыто чисто');
+			} else {
+				console.warn('Обрыв соединения');
+			}
+			console.warn('Код: ' + event.code + ' причина: ' + event.reason);
+		};
+
+		socket.onmessage = function(event) {
+			const evt = JSON.parse(event.data);
+            (listeners[evt.type] || []).forEach(fn => fn(evt.detail));
+		};
+
+		socket.onerror = function(error) {
+			console.error("Ошибка " + error.message);
+		};
+
+		return {
+			subscribe(type, fn) {
+				listeners[type] = listeners[type] || (listeners[type] = []);
+				listeners[type].push(fn);
+            },
+        };
+	})();
 
 	function now() {
 		return env.ts + performance.now();
     }
 
 	function getJSON(method) {
-		return fetch(`/${method}/${location.search}`).then(r => r.json())
+		return fetch(`/${method}/?token=${env.token}`).then(r => r.json())
 	}
 
 	const dotWidth = 3;
@@ -202,13 +239,22 @@
 		getJSON('buddy/list'),
 		getJSON('record/list'),
 	]).then(([buddyList, records]) => {
+		render(buddyList, records);
+
+        ws.subscribe('record', (r) => {
+        	records.push(r);
+			render(buddyList, records)
+        });
+	});
+
+	function render(buddyList, records) {
 		const start = new Date(records[0].ts * 1000);
 		const end = new Date(now());
 
 		start.setMinutes(0);
 		start.setMilliseconds(0);
 
-        end.setMinutes(end.getMinutes());
+		end.setMinutes(end.getMinutes() > 20 ? 61 : 31);
 		end.setMilliseconds(0);
 
 		const minTs = start.getTime()/1000;
@@ -240,13 +286,13 @@
                 left: ${(time - start) / (minute * 1000) * dotWidth}px;
             ">${timeFormat(time)}</div>`;
 			time.setMinutes(min + 30);
-        } while (time.getTime() < end.getTime());
+		} while (time.getTime() < end.getTime());
 		html += '</div>';
 
 		wrapper.innerHTML = html;
 		wrapper.style.width = `${length / minute * dotWidth + 100}px`;
 		timeline.scrollLeft += wrapper.offsetWidth;
-	});
+	}
 
 	function zeroPad(n) {
 		return n < 10 ? `0${n}` : n;

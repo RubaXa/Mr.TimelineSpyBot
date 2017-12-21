@@ -2,8 +2,10 @@ package space
 
 import (
 	"../tnt"
+	"fmt"
 	"github.com/google/uuid"
 	"gopkg.in/vmihailenco/msgpack.v2"
+	"time"
 )
 
 type sTokens struct {
@@ -30,7 +32,7 @@ func (t *sTokens) GetByValue(value string) (*TokensEntry, error) {
 		return &tokens[0], nil
 	}
 
-	return nil, nil
+	return nil, fmt.Errorf("Token not found")
 }
 
 func (t *sTokens) Create(pId uint64) (*TokensEntry, error) {
@@ -43,6 +45,7 @@ func (t *sTokens) Create(pId uint64) (*TokensEntry, error) {
 	token := &TokensEntry{
 		ProjectId: pId,
 		Value:     uid.String(),
+		TS:        time.Now().Unix(),
 	}
 	err = t.Save(token)
 
@@ -53,18 +56,21 @@ func (t *sTokens) Create(pId uint64) (*TokensEntry, error) {
 	return token, nil
 }
 
-const TokenEntrySize = 3
+const TokenEntrySize = 4
 
 type TokensEntry struct {
 	tnt.SpaceEntry
+
 	ProjectId uint64 `json:"project_id"`
 	Value     string `json:"value"`
+	TS        int64  `json:"ts"`
 }
 
 func (t *TokensEntry) EncodeMsgpack(e *msgpack.Encoder) error {
 	t.InitEncode(e, TokenEntrySize)
 	e.EncodeUint64(t.ProjectId)
 	e.EncodeString(t.Value)
+	e.EncodeInt64(t.TS)
 	return nil
 }
 
@@ -72,5 +78,6 @@ func (t *TokensEntry) DecodeMsgpack(d *msgpack.Decoder) error {
 	t.InitDecode(d, TokenEntrySize)
 	t.ProjectId, _ = d.DecodeUint64()
 	t.Value, _ = d.DecodeString()
+	t.TS, _ = d.DecodeInt64()
 	return nil
 }

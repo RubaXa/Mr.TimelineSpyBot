@@ -2,6 +2,7 @@ package space
 
 import (
 	"../tnt"
+	"fmt"
 	"github.com/google/uuid"
 	"gopkg.in/vmihailenco/msgpack.v2"
 )
@@ -26,6 +27,22 @@ func (p *sProjects) Get(id uint64) *ProjectsEntry {
 	} else {
 		return nil
 	}
+}
+
+func (p *sProjects) GetByTokenValue(t string) (*ProjectsEntry, error) {
+	token, err := Tokens.GetByValue(t)
+
+	if err != nil {
+		return nil, err
+	}
+
+	project := p.Get(token.ProjectId)
+
+	if project == nil {
+		return nil, fmt.Errorf("Project not found")
+	}
+
+	return project, nil
 }
 
 func (p *sProjects) GetAll() ([]ProjectsEntry, error) {
@@ -66,7 +83,7 @@ func (entry *ProjectsEntry) AddChat(id string) {
 func (entry *ProjectsEntry) RemoveChat(id string) {
 	for i, x := range entry.Chats {
 		if x == id {
-			entry.Chats = append(entry.Chats[:i], entry.Chats[:i+1]...)
+			entry.Chats = append(entry.Chats[:i], entry.Chats[i+1:]...)
 			break
 		}
 	}
