@@ -10,7 +10,7 @@
 	<div id="wrapper">
 	</div>
 
-    <div id="cursor" style="display: none"></div>
+	<div id="cursor" style="display: none"></div>
 </div>
 
 <style>
@@ -21,9 +21,9 @@
 		font-family: sans-serif;
 	}
 
-    #cursor {
-        position: absolute;
-    }
+	#cursor {
+		position: absolute;
+	}
 
 	#timeline {
 		width: 100%;
@@ -35,14 +35,14 @@
 
 	#timeline::-webkit-scrollbar {
 		-webkit-appearance: none;
-        width: 0;
-        height: 10px;
+		width: 0;
+		height: 10px;
 	}
 
 	#timeline::-webkit-scrollbar-thumb {
-        cursor: pointer;
-		background-color: rgba(0,0,0,.2);
-		-webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+		cursor: pointer;
+		background-color: rgba(0, 0, 0, .2);
+		-webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
 	}
 
 	#wrapper {
@@ -59,7 +59,7 @@
 	}
 
 	.row + .row {
-		border-top: 1px solid rgba(0, 0, 0, .05)
+		border-top: 1px solid rgba(0, 0, 0, .03)
 	}
 
 	.row-label {
@@ -69,17 +69,20 @@
 		position: fixed;
 		font-size: 14px;
 		line-height: 20px;
-		right: 0;
-        border-radius: 3px;
+		left: 0;
+		color: #fff;
+		text-shadow: 0 1px 1px rgba(0, 0, 0, .3);
+		border-radius: 0 3px 3px 0;
+		box-shadow: 1px 0 1px rgba(0, 0, 0, .1);
 	}
 
 	.item {
-		width: 6px;
+		width: 4px;
 		height: 12px;
 		top: 50%;
 		transform: translate(-3px, -50%);
 		box-shadow: 0 1px 1px rgba(0, 0, 0, .2);
-		border-radius: 3px;
+		border-radius: 2px;
 		position: absolute;
 		cursor: pointer;
 	}
@@ -121,56 +124,58 @@
 		);
 		background-size: 8px 8px;
 	}
-	    .empty:before {
+
+	.empty:before {
 		display: inline-block;
 		content: '';
 		height: 100%;
 		vertical-align: middle;
 	}
 
-    .bubble {
-        font-size: 12px;
-        position: absolute;
-        transform: translate(-50%, 0);
-        top: 100%;
-        left: 50%;
-    }
+	.bubble {
+		font-size: 12px;
+		position: absolute;
+		transform: translate(-50%, 0);
+		top: 100%;
+		left: 50%;
+	}
 
-    .minutes {
-        position: relative;
-        height: 10px;
-        z-index: 100;
-    }
-        .minutes::before {
-            display: block;
-            content: '';
-            height: 5px;
-            width: 100%;
-            position: absolute;
-            background-size: 3px 3px;
-            background-image: linear-gradient(to right, #ccc 1px, transparent 1px)
-        }
-        .minutes::after {
-            display: block;
-            content: '';
-            height: 10px;
-            width: 100%;
-            position: absolute;
-            background-size: 90px 3px;
-            background-image: linear-gradient(to right, #333 1px, transparent 1px)
-        }
+	.minutes {
+		position: relative;
+		height: 10px;
+		z-index: 100;
+	}
 
+	.minutes::before {
+		display: block;
+		content: '';
+		height: 5px;
+		width: 100%;
+		position: absolute;
+		background-size: 3px 3px;
+		background-image: linear-gradient(to right, #ccc 1px, transparent 1px)
+	}
 
-	    .minutes .seg {
-            top: 10px;
-            position: absolute;
-            font-size: 9px;
-            transform: translate(-50%,0);
-        }
+	.minutes::after {
+		display: block;
+		content: '';
+		height: 10px;
+		width: 100%;
+		position: absolute;
+		background-size: 90px 3px;
+		background-image: linear-gradient(to right, #333 1px, transparent 1px)
+	}
+
+	.minutes .seg {
+		top: 10px;
+		position: absolute;
+		font-size: 9px;
+		transform: translate(-50%, 0);
+	}
 </style>
 
 <script>
-    const env = {/*env*/};
+	const env = {/*env*/};
 	const getNextColor = (function getNextColorFactory() {
 		const store = {};
 		const step = 30;
@@ -194,11 +199,11 @@
 		const socket = new WebSocket("ws://localhost:3319/ws/" + env.token);
 		const listeners = {};
 
-		socket.onopen = function() {
+		socket.onopen = function () {
 			console.info('Соединение установлено.');
 		};
 
-		socket.onclose = function(event) {
+		socket.onclose = function (event) {
 			if (event.wasClean) {
 				console.info('Соединение закрыто чисто');
 			} else {
@@ -207,12 +212,12 @@
 			console.warn('Код: ' + event.code + ' причина: ' + event.reason);
 		};
 
-		socket.onmessage = function(event) {
+		socket.onmessage = function (event) {
 			const evt = JSON.parse(event.data);
-            (listeners[evt.type] || []).forEach(fn => fn(evt.detail));
+			(listeners[evt.type] || []).forEach(fn => fn(evt.detail));
 		};
 
-		socket.onerror = function(error) {
+		socket.onerror = function (error) {
 			console.error("Ошибка " + error.message);
 		};
 
@@ -220,13 +225,13 @@
 			subscribe(type, fn) {
 				listeners[type] = listeners[type] || (listeners[type] = []);
 				listeners[type].push(fn);
-            },
-        };
+			},
+		};
 	})();
 
 	function now() {
 		return env.ts + performance.now();
-    }
+	}
 
 	function getJSON(method) {
 		return fetch(`/${method}/?token=${env.token}`).then(r => r.json())
@@ -241,11 +246,19 @@
 	]).then(([buddyList, records]) => {
 		render(buddyList, records);
 
-        ws.subscribe('record', (r) => {
-        	records.push(r);
+		ws.subscribe('record', (r) => {
+			records.push(r);
 			render(buddyList, records)
-        });
+		});
 	});
+
+	function hover(el, state) {
+		if (!el.color) {
+			el.color = el.style.backgroundColor;
+		}
+
+		el.style.backgroundColor = state ? el.dataset.hoverColor : el.color;
+	}
 
 	function render(buddyList, records) {
 		const start = new Date(records[0].ts * 1000);
@@ -257,8 +270,8 @@
 		end.setMinutes(end.getMinutes() > 20 ? 61 : 31);
 		end.setMilliseconds(0);
 
-		const minTs = start.getTime()/1000;
-		const maxTs = end.getTime()/1000;
+		const minTs = start.getTime() / 1000;
+		const maxTs = end.getTime() / 1000;
 		const length = maxTs - minTs;
 		let html = '';
 
@@ -266,12 +279,17 @@
 			const color = getNextColor(id);
 
 			html += `
-				<div class="row" style="
-					color: ${color.getValue(1)};
-					background: ${color.getValue(0.15)};
-				">
+				<div class="row"
+				    data-hover-color="${color.getValue(0.3)}"
+				    style="
+					    color: ${color.getValue(1)};
+					    background: ${color.getValue(0.15)};
+				    "
+				    onmouseenter="hover(this, true)"
+				    onmouseleave="hover(this, false)"
+				>
 					${items(id, records, minTs, maxTs, color)}
-					<div class="row-label" style="background: ${color.getValue(0.15)};">${name}</div>
+					<div class="row-label" style="background: ${color.getValue(.8)};">${name}</div>
 				</div>
             `;
 		});
@@ -290,24 +308,24 @@
 		html += '</div>';
 
 		wrapper.innerHTML = html;
-		wrapper.style.width = `${length / minute * dotWidth + 100}px`;
+		wrapper.style.width = `${length / minute * dotWidth}px`;
 		timeline.scrollLeft += wrapper.offsetWidth;
 	}
 
 	function zeroPad(n) {
 		return n < 10 ? `0${n}` : n;
-    }
+	}
 
 	function timeFormat(time) {
 		return `${zeroPad(time.getHours())}:${zeroPad(time.getMinutes())}`;
-    }
+	}
 
-    function group(id, records) {
-        let prev;
+	function group(id, records) {
+		let prev;
 
 		return records.reduce((list, r) => {
 			if (r.source.id === id) {
-                if (!prev || (r.ts - prev.ts) > 60) {
+				if (!prev || (r.ts - prev.ts) > minute) {
 					list.push(prev = {
 						ts: r.ts,
 						cnt: 0,
@@ -316,18 +334,18 @@
 				}
 
 				prev.cnt++;
-				prev.body.push(`[${timeFormat(new Date(r.ts*1000))}]: ${r.body}`);
+				prev.body.push(`[${timeFormat(new Date(r.ts * 1000))}]: ${r.body}`);
 			}
 
 			return list;
-        }, []);
-    }
+		}, []);
+	}
 
 	function items(id, records, minTs, maxTs, color) {
 		return group(id, records).reduce((html, r) => {
-            const y = (r.ts - minTs) / minute * dotWidth;
+			const y = (r.ts - minTs) / minute * dotWidth;
 
-            return `${html}<div class="item"
+			return `${html}<div class="item"
                 style="
                     left: ${y}px;
                     background: ${color.getValue(1)};

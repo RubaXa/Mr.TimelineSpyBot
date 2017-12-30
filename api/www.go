@@ -14,6 +14,12 @@ type ClientEnv struct {
 }
 
 func WwwDashboard(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte(r.URL.Path))
+		return
+	}
+
 	body, _ := ioutil.ReadFile("./www/index.html")
 
 	envJson, _ := json.Marshal(ClientEnv{
